@@ -82,7 +82,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
  */
 int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
-    if (cols <= 1 || rows < 1 || offset >= rows) {    //check if mat is a slice, offset>= mat's row
+    if (cols <= 0 || rows <= 0 ) {    //MAY NEED REVISE LATER
         return -1;
     }
     matrix *new_mat = (matrix *) malloc(sizeof(matrix));
@@ -93,7 +93,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int co
     new_mat->cols = cols;
     new_mat->ref_cnt = 1;
     new_mat->parent = from;
-    new_mat->data = from->data + offset*cols;  //try revise
+    new_mat->data = from->data + offset;  //pointer + offset
     *mat = new_mat;
 
     (from->ref_cnt)++;
@@ -109,13 +109,18 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int co
 /** check ref_cnt */
 void deallocate_matrix(matrix *mat) {
     /* TODO: YOUR CODE HERE */
-
-    // parent == null & data doesn't share(ref_cnt == 1)  ->  free `mat->data`
-    if (!mat->parent && mat->ref_cnt == 1) {
+    if (!mat) {
+        return;
+    }
+    // parent == null && has no slice (ref_cnt == 1)  ->  free `mat->data`
+    if ((!mat->parent) && mat->ref_cnt == 1) {
         free(mat->data);
     }
     //`mat` is only child of its parent  &  parent's parent == null      -> free `mat->parent->data`
-    else if (!mat->parent->parent && mat->parent->ref_cnt == 2) {
+    if (!mat->parent) {
+        return;
+    }
+    else if ((!mat->parent->parent) && mat->parent->ref_cnt == 2) {
         free(mat->parent->data);
     }
 }
