@@ -86,7 +86,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int co
         return -1;
     }
     matrix *new_mat = (matrix *) malloc(sizeof(matrix));
-    if (!mat) {
+    if (!new_mat) {
         return -2;
     }
     new_mat->rows = rows;
@@ -288,21 +288,24 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
 
     int rows_re = result->rows;
     int rows_a = mat->rows;
-
-    if (cols_re!= cols_a || rows_re != rows_a || pow <= 0 || cols_a != rows_a) {
+    if (cols_re!= cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
         return -3;
     }
-    if (pow == 1) {
-        return 0;
+
+    matrix *tmp = NULL;
+    allocate_matrix(&tmp, rows_re, cols_re);
+    fill_matrix(tmp, 0);
+    for (int i = 0; i < rows_re; i++) {
+        tmp->data[i*cols_re + i] = 1;            // tmp =  identical matrix [[1,0],[0,1]];
     }
 
-    mul_matrix(result, mat, mat);
-    pow = pow - 2;
-    int i;
-    for (i = 0; i < pow - 1; i ++) {
-        mul_matrix(result, result, mat);
+    for (int j = 0; j < pow; j++) {
+        mul_matrix(result, tmp, mat);
+        for (int j = 0; j < rows_re * cols_re; j++) {    //NEED IMPROVE SPEED LATER
+            tmp->data[j] = result->data[j];
+        }
     }
-    printf("fir item: %lf , sec item: %lf , third item: %lf , fourth item: %lf .", result->data[0], result->data[1], result->data[2], result->data[3]);
+    deallocate_matrix(tmp);
     return 0;
 }
 
@@ -313,6 +316,31 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
  */
 int neg_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    double* get_d = mat->data;
+    int m_rows = mat->rows;
+    int m_cols = mat->cols;
+
+    double* re_d = result->data;
+    int re_rows = result->rows;
+    int re_cols = result->cols;
+    if (re_rows != m_rows || re_cols != m_cols){
+        return -3;
+    }
+
+    omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < m_rows; i ++) {
+        int k;   
+        for (k = 0; k < m_cols/4*4; k += 4) {
+            __m256d neg_one = _mm256_set1_pd(-1);
+            __m256d source = _mm256_loadu_pd(get_d + i*m_rows + k);
+            __m256d neg_vec = _mm256_mul_pd(source, neg_one);
+            _mm256_storeu_pd(re_d + i*m_cols + k, neg_vec);
+        }
+        for (; k < m_cols; k++) {   //tail
+            re_d[i*m_cols + k] = get_d[i*m_rows + k]*(-1);
+        }
+    }
     return 0;
 }
 
@@ -322,4 +350,29 @@ int neg_matrix(matrix *result, matrix *mat) {
  */
 int abs_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    double* get_d = mat->data;
+    int m_rows = mat->rows;
+    int m_cols = mat->cols;
+
+    matrix *neg_ma = NULL;
+    allocate_matrix(&neg_ma, m_rows, m_cols);
+    neg_matrix(neg_ma, mat);
+    double* neg_d = neg_ma->data;
+
+    double *re_d = result -> data;
+    omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < m_rows; i ++) {
+        int k;   
+        for (k = 0; k < m_cols/4*4; k += 4) {
+            __m256d source = _mm256_loadu_pd(get_d + i*m_rows + k);
+            __m256d neg = _mm256_loadu_pd(neg_d + i*m_rows + k);
+            __m256d max = _mm256_max_pd(source, neg);
+            _mm256_storeu_pd(re_d + i*m_cols + k, max);
+        }
+        for (; k < m_cols; k++) {   //tail
+            re_d[i*m_cols + k] = abs(get_d[i*m_cols + k]);
+        }
+    }
+    return 0;
 }
