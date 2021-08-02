@@ -202,30 +202,10 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
-<<<<<<< HEAD:src/matrix_Harry_ver.c
 
     for (int i = 0; i < rows_a; i++) {
         for (int j = 0; j < cols_a; j++) {
             data_re[i*cols_a + j] = data_a[i*cols_a + j] + data_b[i*cols_a + j];
-=======
-    omp_set_num_threads(4);
-    #pragma omp parallel for
-    for (int i = 0; i < rows_a; i ++) {
-        int k;
-        for (k = 0; k < cols_a/4*4; k += 4) {
-            __m256d tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);
-            __m256d tmp_b = _mm256_loadu_pd(data_b + i*cols_b + k);
-            __m256d sums = _mm256_add_pd(tmp_a, tmp_b);
-
-            
-            data_re[i*cols_a + k] = sums[0];        //haven't decide if use storeu
-            data_re[i*cols_a + k + 1] = sums[1];
-            data_re[i*cols_a + k + 2] = sums[2];
-            data_re[i*cols_a + k + 3] = sums[3];
-        }
-        for (; k < cols_a; k++) {         //tail
-            data_re[i*cols_a + k] = data_a[i*cols_a + k] + data_b[i*cols_a + k];
->>>>>>> a2706f3f8481aebeb07776dd559eb3bc2ea7696d:src/matrix.c
         }
     }
     return 0;
@@ -262,37 +242,11 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
-<<<<<<< HEAD:src/matrix_Harry_ver.c
     for (int i = 0; i < rows_re; i++) {
         for (int j = 0; j < cols_re; j++) {
             data_re[i*cols_re + j] = 0;
             for (int k = 0; k < rows_b; k++) {
                 data_re[i*cols_re + j] += data_a[i*cols_a+ k] * data_b[j + k*cols_b];
-=======
-    omp_set_num_threads(4);
-    #pragma omp parallel for
-    for (int i = 0; i < rows_a; i++) {
-        //#pragma omp parallel for
-        for(int j = 0; j < cols_b; j++) {
-            int k;
-            double dot_sum;
-            __m256d tmp_sum = _mm256_set1_pd(0);
-            for (k = 0; k < cols_a/4*4; k += 4) {
-                __m256d tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
-
-                double b0 = data_b[k*cols_b + j];     //split b's col to each 4, 4, 4 ... items
-                double b1 = data_b[(k+1)*cols_b + j];
-                double b2 = data_b[(k+2)*cols_b + j];     //method 1
-                double b3 = data_b[(k+3)*cols_b + j];
-                __m256d tmp_b = _mm256_set_pd(b0, b1, b2, b3);
-                __m256d tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);    // tmp_sum += [a0, a1, a2, a3] * [b0, b1, b2, b3]
-            }
-            double tmp_arr[4];
-            _mm256_storeu_pd(tmp_arr, tmp_sum);
-            dot_sum = tmp_arr[0] + tmp_arr[1] + tmp_arr[2] + tmp_arr[3]; 
-            for (; k < cols_a; k++) {         //tail
-                dot_sum += data_a[i*cols_a + k] * data_b[k*cols_b + j];
->>>>>>> a2706f3f8481aebeb07776dd559eb3bc2ea7696d:src/matrix.c
             }
         }
     }
