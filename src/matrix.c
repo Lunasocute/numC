@@ -86,7 +86,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int co
         return -1;
     }
     matrix *new_mat = (matrix *) malloc(sizeof(matrix));
-    if (!mat) {
+    if (!new_mat) {
         return -2;
     }
     new_mat->rows = rows;
