@@ -82,7 +82,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
  */
 int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
-    if (cols <= 0 || rows <= 0 ) {    //MAY NEED REVISE LATER
+    if (cols <= 0 || rows <= 0 ) {      //MAY NEED REVISE LATER?????
         return -1;
     }
     matrix *new_mat = (matrix *) malloc(sizeof(matrix));
@@ -144,10 +144,8 @@ double get(matrix *mat, int row, int col) {
  */
 void set(matrix *mat, int row, int col, double val) {
     /* TODO: YOUR CODE HERE */
-
     int m_cols = mat->cols;
     double* get_d = mat->data;
-    
     get_d[col + row*m_cols] = val;
 }
 
@@ -155,14 +153,14 @@ void set(matrix *mat, int row, int col, double val) {
  * Sets all entries in mat to val
  */
 void fill_matrix(matrix *mat, double val) {
-    /* TODO: YOUR CODE HERE */
+    /* TODO: YOUR CODE HERE */    
     double* get_d = mat->data;
-    int m_rows = mat->rows;
+    int m_rows = mat->rows;     
     int m_cols = mat->cols;
 
     omp_set_num_threads(4);
     #pragma omp parallel for
-    for (int i = 0; i < m_rows; i ++) {
+    for (int i = 0; i < m_rows; i ++) {    //seems like could replace with one forloop
         int k;   
         for (k = 0; k < m_cols/4*4; k += 4) {
             get_d[i*m_cols + k] = val;
@@ -208,7 +206,7 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             __m256d sums = _mm256_add_pd(tmp_a, tmp_b);
 
             
-            data_re[i*cols_a + k] = sums[0];    //haven't decide if use loadu
+            data_re[i*cols_a + k] = sums[0];        //haven't decide if use storeu
             data_re[i*cols_a + k + 1] = sums[1];
             data_re[i*cols_a + k + 2] = sums[2];
             data_re[i*cols_a + k + 3] = sums[3];
@@ -264,7 +262,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
 
                 double b0 = data_b[k*cols_b + j];     //split b's col to each 4, 4, 4 ... items
                 double b1 = data_b[(k+1)*cols_b + j];
-                double b2 = data_b[(k+2)*cols_b + j];
+                double b2 = data_b[(k+2)*cols_b + j];     //method 1
                 double b3 = data_b[(k+3)*cols_b + j];
                 __m256d tmp_b = _mm256_set_pd(b0, b1, b2, b3);
                 __m256d tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);    // tmp_sum += [a0, a1, a2, a3] * [b0, b1, b2, b3]
@@ -288,6 +286,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
+    /* A. FOR LOOP VERSION
     int cols_re = result->cols;
     int cols_a = mat->cols;
 
@@ -311,6 +310,45 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         }
     }
     deallocate_matrix(tmp);
+    */
+
+    // B. RECURSION VERSION 
+    int cols_re = result->cols;
+    int cols_a = mat->cols;
+
+    int rows_re = result->rows;
+    int rows_a = mat->rows;
+
+    if (cols_re!= cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
+        return -3;
+    }
+    if (pow == 1) {         //if power = 1  =>  result.matrix = mat.matrix
+        for (int i = 0; i < cols_re * rows_re; i++) {
+            result->data[i] = mat->data[i];            //NEED SPEED UP
+        }
+        return 0;
+    } else if (pow == 0) {  //if power = 0 -> result.data = mat.data
+        for (int i = 0; i < rows_re; i++) {      //if power = 0  =>  identical matrix
+            result->data[i*cols_re + i] = 1;     //identical matrix [[1,0],[0,1]];
+        }
+        return 0;
+    } else {
+        matrix *tmp_a = NULL;
+        allocate_matrix(&tmp_a, rows_re, cols_re);
+        
+        matrix *tmp_b = NULL;
+        allocate_matrix(&tmp_b, rows_re, cols_re);
+        if ((pow & 1) == 0) {               //if pow is even  => result = (A^(n/2))^2
+            pow_matrix(tmp_a, mat, pow/2);     
+            mul_matrix(result, tmp_a, tmp_a);  
+        } else if ((pow & 1) != 0) {        //if pow is odd   => result = A *(A^(n/2))^2
+            pow_matrix(tmp_a, mat, pow/2);
+            mul_matrix(tmp_b, tmp_a, tmp_a);
+            mul_matrix(result, tmp_b, mat);    
+        }
+        deallocate_matrix(tmp_a);
+        deallocate_matrix(tmp_b);
+    }
     return 0;
 }
 
