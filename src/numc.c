@@ -315,6 +315,7 @@ static PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
 
     if (!PyObject_TypeCheck(args, &Matrix61cType) || !PyObject_TypeCheck(self, &Matrix61cType)) {
         PyErr_SetString(PyExc_TypeError, "arg1 and arg2 are not type num.Matrix");
+        return NULL;
     } 
 
     
@@ -327,6 +328,7 @@ static PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
 
     if (add_matrix(new_mat, self->mat, ((Matrix61c *)args)->mat) == -3) {
         PyErr_SetString(PyExc_ValueError, "arg1 and arg2 have different dimensions");
+        return -1;
     }
     Matrix61c* rv = (Matrix61c*) Matrix61c_new(&Matrix61cType, NULL, NULL);
     rv->mat = new_mat;
@@ -351,6 +353,7 @@ static PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
     /* TODO: YOUR CODE HERE */
     if (!PyObject_TypeCheck(args, &Matrix61cType) || !PyObject_TypeCheck(self, &Matrix61cType)) {
         PyErr_SetString(PyExc_TypeError, "arg1 and arg2 are not type num.Matrix");
+        return NULL;
     } 
     matrix *new_mat;
     int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, ((Matrix61c *)args)->mat->cols);
@@ -359,6 +362,7 @@ static PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
     
     if (mul_matrix(new_mat, self->mat, ((Matrix61c *)args)->mat) == -3) {
         PyErr_SetString(PyExc_ValueError, "arg1's number of columns is not equal to arg2's number of rows.");
+        return -1;
     }
     Matrix61c* rv = (Matrix61c*) Matrix61c_new(&Matrix61cType, NULL, NULL);
     rv->mat = new_mat;
@@ -381,6 +385,7 @@ static PyObject *Matrix61c_abs(Matrix61c *self) {
     /* TODO: YOUR CODE HERE */
     if (!PyObject_TypeCheck(self, &Matrix61cType)) {
         PyErr_SetString(PyExc_TypeError, "arg1 is not type num.Matrix");
+        return NULL;
     } 
     matrix *new_mat;
     int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
@@ -401,9 +406,11 @@ static PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optiona
     /* TODO: YOUR CODE HERE */
     if (!PyLong_Check(pow)) {
         PyErr_SetString(PyExc_TypeError, "pow is not an integer.");
+        return NULL;
     }
     if (!PyObject_TypeCheck(self, &Matrix61cType)) {
         PyErr_SetString(PyExc_TypeError, "arg1 and arg2 are not type num.Matrix.");
+        return NULL;
     } 
     matrix *new_mat;
     int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
@@ -412,6 +419,7 @@ static PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optiona
     
     if (pow_matrix(new_mat, self->mat, PyLong_AsLong(pow)) == -3) {
         PyErr_SetString(PyExc_ValueError, "arg1 is not a square matrix or if pow is negative.");
+        return -1;
     }
     Matrix61c* rv = (Matrix61c*) Matrix61c_new(&Matrix61cType, NULL, NULL);
     rv->mat = new_mat;
@@ -439,20 +447,24 @@ static PyNumberMethods Matrix61c_as_number = {
  */
 static PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
-    PyObject* arg1 = PyList_GetItem(args, 0);
-    PyObject* arg2 = PyList_GetItem(args, 1);
-    PyObject* arg3 = PyList_GetItem(args, 2);
-    if (PyList_Size(args) != 3) {
+    PyObject* arg1 = PyTuple_GetItem(args, 0);
+    PyObject* arg2 = PyTuple_GetItem(args, 1);
+    PyObject* arg3 = PyTuple_GetItem(args, 2);
+    if (PyTuple_Size(args) != 3) {
         PyErr_SetString(PyExc_TypeError, "number of arguments is not 3");
+        return NULL;
     } else if (!PyLong_Check(arg1) || !PyLong_Check(arg2) || (!PyLong_Check(arg3) && !PyFloat_Check(arg3))) {
         PyErr_SetString(PyExc_TypeError, "i or j is not integers, or val is not a float or int.");
+        return NULL;
     } else {
         int row = PyLong_AsLong(arg1);
         int col = PyLong_AsLong(arg2);
         double val = PyFloat_AsDouble(arg3);
+        
         matrix* cur_mat = ((Matrix61c *) self)->mat;
         if (row >= cur_mat->rows || col >= cur_mat->cols) {
             PyErr_SetString(PyExc_IndexError, "i or j or both are out of range.");
+            return NULL;
         }
         set(cur_mat, row, col, val);
     }
@@ -466,20 +478,27 @@ static PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
  */
 static PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
-    PyObject* arg1 = PyList_GetItem(args, 0);
-    PyObject* arg2 = PyList_GetItem(args, 1);
-    if (PyList_Size(args) != 2) {
+    
+    PyObject* arg1 = PyTuple_GetItem(args, 0);
+    PyObject* arg2 = PyTuple_GetItem(args, 1);
+    if (PyTuple_Size(args) != 2) {
         PyErr_SetString(PyExc_TypeError, "number of arguments is not 2");
+        return NULL;
     } else if (!PyLong_Check(arg1) || !PyLong_Check(arg2)) {
         PyErr_SetString(PyExc_TypeError, "i or j is not integers.");
+        return NULL;
     } 
     int row = PyLong_AsLong(arg1);
     int col = PyLong_AsLong(arg2);
     matrix* cur_mat = ((Matrix61c *) self)->mat;
-    if (row >= cur_mat->rows || col >= cur_mat->cols) {
+    if (row >= cur_mat->rows || col >= cur_mat->cols || row < 0 || col < 0) {
         PyErr_SetString(PyExc_IndexError, "i or j or both are out of range.");
+        return NULL;
     }
+
     double result = get(cur_mat, row, col);
+
+
     return PyFloat_FromDouble(result);
 }
 
@@ -491,8 +510,8 @@ static PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
  */
 static PyMethodDef Matrix61c_methods[] = {
     /* TODO: YOUR CODE HERE */
-    {"get", (PyCFunction) Matrix61c_get_value, 0, NULL}, 
-    {"set", (PyCFunction) Matrix61c_set_value, 0, NULL},
+    {"get", (PyCFunction) Matrix61c_get_value, METH_VARARGS, NULL}, 
+    {"set", (PyCFunction) Matrix61c_set_value, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
