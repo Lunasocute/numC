@@ -169,9 +169,18 @@ void fill_matrix(matrix *mat, double val) {
     int m_rows = mat->rows;     
     int m_cols = mat->cols;
 
-    for (int i = 0; i < m_rows; i++) {
-        for (int j = 0; j < m_cols; j++) {
-            get_d[i*m_cols + j] = val;
+    omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < m_rows; i ++) {    //seems like could replace with one forloop
+        int k;   
+        for (k = 0; k < m_cols/4*4; k += 4) {
+            get_d[i*m_cols + k] = val;
+            get_d[i*m_cols + k + 1] = val;
+            get_d[i*m_cols + k + 2] = val;
+            get_d[i*m_cols + k + 3] = val;
+        }
+        for (; k < m_cols; k++) {   //tail
+            get_d[i*m_cols + k] = val;
         }
     }
 }
@@ -198,10 +207,23 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
+    omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < rows_a; i ++) {
+        int k;
+        for (k = 0; k < cols_a/4*4; k += 4) {
+            __m256d tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);
+            __m256d tmp_b = _mm256_loadu_pd(data_b + i*cols_b + k);
+            __m256d sums = _mm256_add_pd(tmp_a, tmp_b);
 
-    for (int i = 0; i < rows_a; i++) {
-        for (int j = 0; j < cols_a; j++) {
-            data_re[i*cols_a + j] = data_a[i*cols_a + j] + data_b[i*cols_a + j];
+            
+            data_re[i*cols_a + k] = sums[0];        //haven't decide if use storeu
+            data_re[i*cols_a + k + 1] = sums[1];
+            data_re[i*cols_a + k + 2] = sums[2];
+            data_re[i*cols_a + k + 3] = sums[3];
+        }
+        for (; k < cols_a; k++) {         //tail
+            data_re[i*cols_a + k] = data_a[i*cols_a + k] + data_b[i*cols_a + k];
         }
     }
     return 0;
@@ -269,7 +291,6 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             //printf("for data[%d][%d]: value = %lf \n ", i, j, dot_sum);
         }
     }
-
     return 0;
 }
 
@@ -365,9 +386,18 @@ int neg_matrix(matrix *result, matrix *mat) {
         return -3;
     }
 
-    for (int i = 0; i < m_rows; i++) {
-        for (int j = 0; j < m_cols; j++) {
-            re_d[i * m_rows + j] = get_d[i * m_cols + j] * (-1);
+    omp_set_num_threads(4);
+    #pragma omp parallel for
+    for (int i = 0; i < m_rows; i ++) {
+        int k;   
+        for (k = 0; k < m_cols/4*4; k += 4) {
+            __m256d neg_one = _mm256_set1_pd(-1);
+            __m256d source = _mm256_loadu_pd(get_d + i*m_rows + k);
+            __m256d neg_vec = _mm256_mul_pd(source, neg_one);
+            _mm256_storeu_pd(re_d + i*m_cols + k, neg_vec);
+        }
+        for (; k < m_cols; k++) {   //tail
+            re_d[i*m_cols + k] = get_d[i*m_rows + k]*(-1);
         }
     }
     return 0;
