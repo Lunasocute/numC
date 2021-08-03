@@ -62,31 +62,48 @@ void mul_test(void) {
   matrix *result = NULL;
   matrix *mat1 = NULL;
   matrix *mat2 = NULL;
-  CU_ASSERT_EQUAL(allocate_matrix(&result, 3, 3), 0);
-  CU_ASSERT_EQUAL(allocate_matrix(&mat1, 3, 3), 0);
-  CU_ASSERT_EQUAL(allocate_matrix(&mat2, 3, 3), 0);
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      set(mat1, i, j, i * 3 + j + 1);
-      set(mat2, i, j, i * 3 + j + 1);
+  CU_ASSERT_EQUAL(allocate_matrix(&result, 4, 4), 0);
+
+  CU_ASSERT_EQUAL(allocate_matrix(&mat1, 4, 5), 0);
+  CU_ASSERT_EQUAL(allocate_matrix(&mat2, 5, 4), 0);
+  fill_matrix(mat1, 3);
+  fill_matrix(mat2, 3);
+
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      set(mat1, i, j, 2);
+      set(mat2, i, j, 2);
     }
   }
+
+
   mul_matrix(result, mat1, mat2);
-  CU_ASSERT_EQUAL(get(result, 0, 0), 30);
-  CU_ASSERT_EQUAL(get(result, 0, 1), 36);
-  CU_ASSERT_EQUAL(get(result, 0, 2), 42);
-  CU_ASSERT_EQUAL(get(result, 1, 0), 66);
-  CU_ASSERT_EQUAL(get(result, 1, 1), 81);
-  CU_ASSERT_EQUAL(get(result, 1, 2), 96);
-  CU_ASSERT_EQUAL(get(result, 2, 0), 102);
-  CU_ASSERT_EQUAL(get(result, 2, 1), 126);
-  CU_ASSERT_EQUAL(get(result, 2, 2), 150);
+  CU_ASSERT_EQUAL(get(result, 0, 0), 25);
+  CU_ASSERT_EQUAL(get(result, 0, 1), 25);
+  CU_ASSERT_EQUAL(get(result, 0, 2), 25);
+  CU_ASSERT_EQUAL(get(result, 0, 3), 25);
+
+  CU_ASSERT_EQUAL(get(result, 1, 0), 25);
+  CU_ASSERT_EQUAL(get(result, 1, 1), 25);
+  CU_ASSERT_EQUAL(get(result, 1, 2), 25);
+  CU_ASSERT_EQUAL(get(result, 1, 3), 25); 
+
+  CU_ASSERT_EQUAL(get(result, 2, 0), 25);
+  CU_ASSERT_EQUAL(get(result, 2, 1), 25);
+  CU_ASSERT_EQUAL(get(result, 2, 2), 25);
+  CU_ASSERT_EQUAL(get(result, 2, 3), 25);
+
+  CU_ASSERT_EQUAL(get(result, 3, 0), 25);
+  CU_ASSERT_EQUAL(get(result, 3, 1), 25);
+  CU_ASSERT_EQUAL(get(result, 3, 2), 25);
+  CU_ASSERT_EQUAL(get(result, 3, 3), 25); 
+
   deallocate_matrix(result);
   deallocate_matrix(mat1);
   deallocate_matrix(mat2);
 }
 
-/* (OPTIONAL) Uncomment the following neg_test if you have decided to implement it in matrix.c.
+/* (OPTIONAL) Uncomment the following neg_test if you have decided to implement it in matrix.c. */
 void neg_test(void) {
   matrix *result = NULL;
   matrix *mat = NULL;
@@ -106,15 +123,15 @@ void neg_test(void) {
   deallocate_matrix(result);
   deallocate_matrix(mat);
 } 
-*/
+
 
 void abs_test(void) {
   matrix *result = NULL;
   matrix *mat = NULL;
-  CU_ASSERT_EQUAL(allocate_matrix(&result, 2, 2), 0);
-  CU_ASSERT_EQUAL(allocate_matrix(&mat, 2, 2), 0);
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
+  CU_ASSERT_EQUAL(allocate_matrix(&result, 6, 6), 0);
+  CU_ASSERT_EQUAL(allocate_matrix(&mat, 6, 6), 0);
+  for (int i = 0; i < 6; i++) {
+    for (int j = 0; j < 6; j++) {
       if (j % 2 == 0)
         set(mat, i, j, i * 2 + j);
       else
@@ -122,8 +139,8 @@ void abs_test(void) {
     }
   }
   abs_matrix(result, mat);
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
+  for (int i = 0; i < 6; i++) {
+    for (int j = 0; j < 6; j++) {
       CU_ASSERT_EQUAL(get(result, i, j), i * 2 + j);
     }
   }
@@ -131,6 +148,7 @@ void abs_test(void) {
   deallocate_matrix(mat);
 }
 
+/**
 void pow_test(void) {
   matrix *result = NULL;
   matrix *mat = NULL;
@@ -153,6 +171,7 @@ void pow_test(void) {
   deallocate_matrix(result);
   deallocate_matrix(mat);
 }
+*/
 
 void alloc_fail_test(void) {
   matrix *mat = NULL;
@@ -261,11 +280,12 @@ int main (void)
    if ((CU_add_test(pSuite, "add_test", add_test) == NULL) ||
         /* (OPTIONAL) Uncomment the following lines if you have implemented sub_matrix and neg_matrix.
         (CU_add_test(pSuite, "sub_test", sub_test) == NULL) ||
-        (CU_add_test(pSuite, "neg_test", neg_test) == NULL) ||
         */
+        (CU_add_test(pSuite, "neg_test", neg_test) == NULL) ||
+        
         (CU_add_test(pSuite, "mul_test", mul_test) == NULL) ||
         (CU_add_test(pSuite, "abs_test", abs_test) == NULL) ||
-        (CU_add_test(pSuite, "pow_test", pow_test) == NULL) ||
+        //(CU_add_test(pSuite, "pow_test", pow_test) == NULL) ||
         (CU_add_test(pSuite, "alloc_fail_test", alloc_fail_test) == NULL) ||
         (CU_add_test(pSuite, "alloc_success_test", alloc_success_test) == NULL) ||
         (CU_add_test(pSuite, "alloc_ref_fail_test", alloc_ref_fail_test) == NULL) ||
@@ -280,8 +300,8 @@ int main (void)
    }
 
   // Run all tests using the basic interface
-  CU_basic_set_mode(CU_BRM_NORMAL);
-  // CU_basic_set_mode(CU_BRM_VERBOSE);
+  //CU_basic_set_mode(CU_BRM_NORMAL);
+  CU_basic_set_mode(CU_BRM_VERBOSE);
   CU_basic_run_tests();
   printf("\n");
   CU_basic_show_failures(CU_get_failure_list());
