@@ -404,29 +404,19 @@ int neg_matrix(matrix *result, matrix *mat) {
  */
 int abs_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+
     double* get_d = mat->data;
     int m_rows = mat->rows;
     int m_cols = mat->cols;
 
-    matrix *neg_ma = NULL;
-    allocate_matrix(&neg_ma, m_rows, m_cols);
-    neg_matrix(neg_ma, mat);
-    double* neg_d = neg_ma->data;
-    double *re_d = result -> data;
+    double *re_d = result->data;
 
     #pragma omp parallel for
-    for (int i = 0; i < m_rows; i ++) {
-        int k;   
-        for (k = 0; k < m_cols/4*4; k += 4) {
-            __m256d source = _mm256_loadu_pd(get_d + i*m_rows + k);
-            __m256d neg = _mm256_loadu_pd(neg_d + i*m_rows + k);
-            __m256d max = _mm256_max_pd(source, neg);
-            _mm256_storeu_pd(re_d + i*m_cols + k, max);
-        }
-        for (; k < m_cols; k++) {   //tail
-            re_d[i*m_cols + k] = fabs(get_d[i*m_cols + k]);
+    for (int i = 0; i < m_rows; i++) {
+        #pragma omp parallel for
+        for (int j = 0; j < m_cols; j++) {
+            re_d[i*m_cols + j] = fabs(get_d[i*m_cols + j]);
         }
     }
-    deallocate_matrix(neg_ma);
     return 0;
 }
