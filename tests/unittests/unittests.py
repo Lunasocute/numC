@@ -184,6 +184,7 @@ class TestIndexSet(TestCase):
         rand_col = np.random.randint(dp_mat.shape[1])
         dp_mat[rand_row][rand_col] = 2
         nc_mat[rand_row][rand_col] = 2
+        
         self.assertTrue(cmp_dp_nc_matrix(dp_mat, nc_mat))
         self.assertEquals(nc_mat[rand_row][rand_col], 2)
 

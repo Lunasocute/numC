@@ -317,6 +317,7 @@ static PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
         return NULL;
     } 
 
+    
     matrix *new_mat;
     int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
     if (alloc_failed) {
@@ -459,7 +460,6 @@ static PyNumberMethods Matrix61c_as_number = {
  * This function should return None in Python.
  */
 static PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
     /* TODO: YOUR CODE HERE */
     PyObject* arg1 = PyTuple_GetItem(args, 0);
     PyObject* arg2 = PyTuple_GetItem(args, 1);
