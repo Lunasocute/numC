@@ -135,7 +135,6 @@ void deallocate_matrix(matrix *mat) {
         mat->parent->ref_cnt--;
         free(mat);
     }
-    
 }
 
 /*
@@ -169,7 +168,6 @@ void fill_matrix(matrix *mat, double val) {
     int m_rows = mat->rows;     
     int m_cols = mat->cols;
 
-    omp_set_num_threads(4);
     #pragma omp parallel for
     for (int i = 0; i < m_rows; i ++) {    //seems like could replace with one forloop
         int k;   
@@ -207,7 +205,6 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
-    omp_set_num_threads(4);
     #pragma omp parallel for
     for (int i = 0; i < rows_a; i ++) {
         int k;
@@ -261,7 +258,6 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
-    omp_set_num_threads(4);
     #pragma omp parallel for
     for (int i = 0; i < rows_a; i++) {
         #pragma omp parallel for
@@ -386,7 +382,6 @@ int neg_matrix(matrix *result, matrix *mat) {
         return -3;
     }
 
-    omp_set_num_threads(4);
     #pragma omp parallel for
     for (int i = 0; i < m_rows; i ++) {
         int k;   
@@ -417,9 +412,8 @@ int abs_matrix(matrix *result, matrix *mat) {
     allocate_matrix(&neg_ma, m_rows, m_cols);
     neg_matrix(neg_ma, mat);
     double* neg_d = neg_ma->data;
-
     double *re_d = result -> data;
-    omp_set_num_threads(4);
+
     #pragma omp parallel for
     for (int i = 0; i < m_rows; i ++) {
         int k;   
