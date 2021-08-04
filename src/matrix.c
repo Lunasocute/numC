@@ -337,13 +337,22 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
                 
             }
             for(int m = cols_b/4*4; m < cols_b; m ++) {
+                tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k); 
                 b0 = data_b[k*cols_b + m];     //split b's col to each 4, 4, 4 ... items
                 b1 = data_b[(k+1)*cols_b + m];
                 b2 = data_b[(k+2)*cols_b + m];     //method 1
                 b3 = data_b[(k+3)*cols_b + m];
                 tmp_b = _mm256_set_pd(b3, b2, b1, b0);
                 tmp_sum0 = _mm256_mul_pd(tmp_a, tmp_b);
-                data_re[i*cols_re + m] = tmp_sum0[0] + tmp_sum0[1] + tmp_sum0[2] + tmp_sum0[3]; 
+
+                tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k + 4);
+                b0 = data_b[(k+4)*cols_b + m];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+5)*cols_b + m];
+                b2 = data_b[(k+6)*cols_b + m];     //method 1
+                b3 = data_b[(k+7)*cols_b + m];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum0 = _mm256_fmadd_pd (tmp_a, tmp_b, tmp_sum0);
+                data_re[i*cols_re + m] += tmp_sum0[0] + tmp_sum0[1] + tmp_sum0[2] + tmp_sum0[3]; 
             }
             /*
             #pragma omp critical
