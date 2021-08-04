@@ -258,14 +258,15 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
+    fill_matrix(result, 0);
+
     #pragma omp parallel for
     for (int i = 0; i < rows_a; i++) {
-        #pragma omp parallel for
-        for(int j = 0; j < cols_b; j++) {
-            int k;
-            double dot_sum;
-            __m256d tmp_sum = _mm256_set1_pd(0);
-            for (k = 0; k < cols_a/4*4; k += 4) {
+        int k;
+        for (k = 0; k < cols_a/4*4; k += 4) {
+            #pragma omp parallel for 
+            for(int j = 0; j < cols_b; j++) {
+                __m256d tmp_sum = _mm256_set1_pd(0);
                 __m256d tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
 
                 double b0 = data_b[k*cols_b + j];     //split b's col to each 4, 4, 4 ... items
@@ -273,18 +274,14 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
                 double b2 = data_b[(k+2)*cols_b + j];     //method 1
                 double b3 = data_b[(k+3)*cols_b + j];
                 __m256d tmp_b = _mm256_set_pd(b3, b2, b1, b0);
-                tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);    // tmp_sum += [a0, a1, a2, a3] * [b0, b1, b2, b3]
-                //printf("tmp_sum = %lf + %lf + %lf + %lf \n ", tmp_sum[0], tmp_sum[1], tmp_sum[2], tmp_sum[3]);
+                tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);  
+                data_re[i*cols_re + j] += tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3]; 
             }
-            double tmp_arr[4];
-            _mm256_storeu_pd(tmp_arr, tmp_sum);
-            //printf("tmp_sum = %lf + %lf + %lf + %lf \n ", tmp_sum[0], tmp_sum[1], tmp_sum[2], tmp_sum[3]);
-            dot_sum = tmp_arr[0] + tmp_arr[1] + tmp_arr[2] + tmp_arr[3]; 
-            for (k = cols_a/4*4; k < cols_a; k++) {         //tail
-                dot_sum += data_a[i*cols_a + k] * data_b[k*cols_b + j];
+        }
+        for (k = cols_a/4*4; k < cols_a; k++) {         //tail
+            for(int j = 0; j < cols_b; j++) {
+                data_re[i*cols_re + j] += data_a[i*cols_a + k] * data_b[k*cols_b + j]; 
             }
-            data_re[i*cols_re + j] = dot_sum;
-            //printf("for data[%d][%d]: value = %lf \n ", i, j, dot_sum);
         }
     }
     return 0;
