@@ -263,10 +263,11 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     #pragma omp parallel for
     for (int i = 0; i < rows_a; i++) {
         int k;
+        #pragma omp parallel for 
         for (k = 0; k < cols_a/4*4; k += 4) {
+            double one_row[cols_re];
             #pragma omp parallel for 
             for(int j = 0; j < cols_b; j++) {
-                __m256d tmp_sum = _mm256_set1_pd(0);
                 __m256d tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
 
                 double b0 = data_b[k*cols_b + j];     //split b's col to each 4, 4, 4 ... items
@@ -274,11 +275,17 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
                 double b2 = data_b[(k+2)*cols_b + j];     //method 1
                 double b3 = data_b[(k+3)*cols_b + j];
                 __m256d tmp_b = _mm256_set_pd(b3, b2, b1, b0);
-                tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);  
-                data_re[i*cols_re + j] += tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3]; 
+                __m256d tmp_sum = _mm256_mul_pd(tmp_a, tmp_b);
+                one_row[j] = tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3]; 
+            }
+            #pragma omp critical
+            for (int j = 0; j < cols_b; j++) {
+                data_re[i*cols_re + j] += one_row[j];
             }
         }
+        #pragma omp parallel for 
         for (k = cols_a/4*4; k < cols_a; k++) {         //tail
+            #pragma omp parallel for 
             for(int j = 0; j < cols_b; j++) {
                 data_re[i*cols_re + j] += data_a[i*cols_a + k] * data_b[k*cols_b + j]; 
             }
