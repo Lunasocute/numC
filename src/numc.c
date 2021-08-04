@@ -312,7 +312,6 @@ static PyMappingMethods Matrix61c_mapping = {
  */
 static PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
-
     if (!PyObject_TypeCheck(args, &Matrix61cType) || !PyObject_TypeCheck(self, &Matrix61cType)) {
         PyErr_SetString(PyExc_TypeError, "arg1 and arg2 are not type num.Matrix");
         return NULL;
@@ -375,7 +374,20 @@ static PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
  */
 static PyObject *Matrix61c_neg(Matrix61c* self) {
     /* TODO: YOUR CODE HERE */
-    return 0;
+    if (!PyObject_TypeCheck(self, &Matrix61cType)) {
+        PyErr_SetString(PyExc_TypeError, "arg1 is not type num.Matrix");
+        return NULL;
+    } 
+    matrix *new_mat;
+    int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
+    if (alloc_failed)
+        return alloc_failed;
+    
+    neg_matrix(new_mat, self->mat);
+    Matrix61c* rv = (Matrix61c*) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    rv->mat = new_mat;
+    rv->shape = PyTuple_Pack(2, PyLong_FromLong(new_mat->rows), PyLong_FromLong(new_mat->cols));
+    return (PyObject *) rv;
 }
 
 /*
@@ -436,7 +448,9 @@ static PyNumberMethods Matrix61c_as_number = {
     .nb_add = (binaryfunc) Matrix61c_add,
     .nb_multiply = (binaryfunc) Matrix61c_multiply,
     .nb_power = (ternaryfunc) Matrix61c_pow,
+    .nb_negative = (unaryfunc) Matrix61c_neg,
     .nb_absolute = (unaryfunc) Matrix61c_abs
+    
 };
 
 
@@ -478,7 +492,6 @@ static PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
  */
 static PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
-    
     PyObject* arg1 = PyTuple_GetItem(args, 0);
     PyObject* arg2 = PyTuple_GetItem(args, 1);
     if (PyTuple_Size(args) != 2) {
