@@ -263,28 +263,97 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     #pragma omp parallel for
     for (int i = 0; i < rows_a; i++) {
         int k;
-        #pragma omp parallel for 
-        for (k = 0; k < cols_a/4*4; k += 4) {
-            double one_row[cols_re];
+        //#pragma omp parallel for 
+        for (k = 0; k < cols_a/8*8; k += 8) {
+            //double one_row[cols_re];
+            __m256d tmp_a; 
+            double b0, b1, b2, b3;
+            __m256d tmp_b;
+            __m256d tmp_sum0, tmp_sum1, tmp_sum2, tmp_sum3;
             #pragma omp parallel for 
-            for(int j = 0; j < cols_b; j++) {
-                __m256d tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
+            for(int j = 0; j < cols_b/4*4; j += 4) {
+                tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
+                b0 = data_b[k*cols_b + j];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+1)*cols_b + j];
+                b2 = data_b[(k+2)*cols_b + j];     //method 1
+                b3 = data_b[(k+3)*cols_b + j];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum0 = _mm256_mul_pd(tmp_a, tmp_b);
 
-                double b0 = data_b[k*cols_b + j];     //split b's col to each 4, 4, 4 ... items
-                double b1 = data_b[(k+1)*cols_b + j];
-                double b2 = data_b[(k+2)*cols_b + j];     //method 1
-                double b3 = data_b[(k+3)*cols_b + j];
-                __m256d tmp_b = _mm256_set_pd(b3, b2, b1, b0);
-                __m256d tmp_sum = _mm256_mul_pd(tmp_a, tmp_b);
-                one_row[j] = tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3]; 
+                b0 = data_b[k*cols_b + j + 1];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+1)*cols_b + j + 1];
+                b2 = data_b[(k+2)*cols_b + j + 1];     //method 1
+                b3 = data_b[(k+3)*cols_b + j + 1];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum1 = _mm256_mul_pd(tmp_a, tmp_b);
+
+                b0 = data_b[k*cols_b + j + 2];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+1)*cols_b + j + 2];
+                b2 = data_b[(k+2)*cols_b + j + 2];     //method 1
+                b3 = data_b[(k+3)*cols_b + j + 2];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum2 = _mm256_mul_pd(tmp_a, tmp_b);
+
+                b0 = data_b[k*cols_b + j + 3];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+1)*cols_b + j + 3];
+                b2 = data_b[(k+2)*cols_b + j + 3];     //method 1
+                b3 = data_b[(k+3)*cols_b + j + 3];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum3 = _mm256_mul_pd(tmp_a, tmp_b);
+                
+
+                tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k + 4);   //split one row to each 4, 4, 4 ... items
+                b0 = data_b[(k+4)*cols_b + j];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+5)*cols_b + j];
+                b2 = data_b[(k+6)*cols_b + j];     //method 1
+                b3 = data_b[(k+7)*cols_b + j];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum0 = _mm256_fmadd_pd (tmp_a, tmp_b, tmp_sum0);
+                data_re[i*cols_re + j] += tmp_sum0[0] + tmp_sum0[1] + tmp_sum0[2] + tmp_sum0[3]; 
+
+                b0 = data_b[(k+4)*cols_b + j + 1];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+5)*cols_b + j + 1];
+                b2 = data_b[(k+6)*cols_b + j + 1];     //method 1
+                b3 = data_b[(k+7)*cols_b + j + 1];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum1 = _mm256_fmadd_pd (tmp_a, tmp_b, tmp_sum1);
+                data_re[i*cols_re + j + 1] += tmp_sum1[0] + tmp_sum1[1] + tmp_sum1[2] + tmp_sum1[3]; 
+
+                b0 = data_b[(k+4)*cols_b + j + 2];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+5)*cols_b + j + 2];
+                b2 = data_b[(k+6)*cols_b + j + 2];     //method 1
+                b3 = data_b[(k+7)*cols_b + j + 2];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum2 = _mm256_fmadd_pd (tmp_a, tmp_b, tmp_sum2);
+                data_re[i*cols_re + j + 2] += tmp_sum2[0] + tmp_sum2[1] + tmp_sum2[2] + tmp_sum2[3]; 
+
+                b0 = data_b[(k+4)*cols_b + j + 3];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+5)*cols_b + j + 3];
+                b2 = data_b[(k+6)*cols_b + j + 3];     //method 1
+                b3 = data_b[(k+7)*cols_b + j + 3];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum3 = _mm256_fmadd_pd (tmp_a, tmp_b, tmp_sum3);
+                data_re[i*cols_re + j + 3] += tmp_sum3[0] + tmp_sum3[1] + tmp_sum3[2] + tmp_sum3[3]; 
+                
             }
+            for(int m = cols_b/4*4; m < cols_b; m ++) {
+                b0 = data_b[k*cols_b + m];     //split b's col to each 4, 4, 4 ... items
+                b1 = data_b[(k+1)*cols_b + m];
+                b2 = data_b[(k+2)*cols_b + m];     //method 1
+                b3 = data_b[(k+3)*cols_b + m];
+                tmp_b = _mm256_set_pd(b3, b2, b1, b0);
+                tmp_sum0 = _mm256_mul_pd(tmp_a, tmp_b);
+                data_re[i*cols_re + m] = tmp_sum0[0] + tmp_sum0[1] + tmp_sum0[2] + tmp_sum0[3]; 
+            }
+            /*
             #pragma omp critical
             for (int j = 0; j < cols_b; j++) {
                 data_re[i*cols_re + j] += one_row[j];
             }
+            */
         }
         #pragma omp parallel for 
-        for (k = cols_a/4*4; k < cols_a; k++) {         //tail
+        for (k = cols_a/8*8; k < cols_a; k++) {         //tail
             #pragma omp parallel for 
             for(int j = 0; j < cols_b; j++) {
                 data_re[i*cols_re + j] += data_a[i*cols_a + k] * data_b[k*cols_b + j]; 
