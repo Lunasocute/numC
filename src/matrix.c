@@ -169,8 +169,17 @@ void fill_matrix(matrix *mat, double val) {
     int m_cols = mat->cols;
 
     #pragma omp parallel for
-    for (int i = 0; i < m_rows * m_cols; i ++) {    //seems like could replace with one forloop
-        get_d[i] = val;
+    for (int i = 0; i < m_rows; i ++) {    //seems like could replace with one forloop
+        int k;   
+        for (k = 0; k < m_cols/4*4; k += 4) {
+            get_d[i*m_cols + k] = val;
+            get_d[i*m_cols + k + 1] = val;
+            get_d[i*m_cols + k + 2] = val;
+            get_d[i*m_cols + k + 3] = val;
+        }
+        for (; k < m_cols; k++) {   //tail
+            get_d[i*m_cols + k] = val;
+        }
     }
 }
 
@@ -234,6 +243,7 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+
     int cols_re = result->cols;
     int cols_a = mat1->cols;
     int cols_b = mat2->cols;
@@ -270,14 +280,15 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
                 tmp_b = _mm256_loadu_pd(data_tran + j*cols_a + k); 
                 tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);
             }
-            dot_sum += tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3];
-            for (k = cols_a/4*4; k < cols_a; k ++) {
+            dot_sum = tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3];
+            for (; k < cols_a; k ++) {
                 dot_sum += data_a[i*cols_a + k] * data_tran[j*cols_a + k];
             }
             data_re[i*cols_re + j] = dot_sum;
         }
     }
     deallocate_matrix(trans);
+    
     return 0;
 }
 

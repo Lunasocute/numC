@@ -19,3 +19,5 @@ for i in range(0,3):
 
 mat6 = nc.Matrix(a) 
 print(abs(mat6)**2)
+
+mat1 = nc.Matrix([[1,2], [3,4]])
