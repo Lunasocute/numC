@@ -237,10 +237,8 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int cols_re = result->cols;
     int cols_a = mat1->cols;
     int cols_b = mat2->cols;
-
     int rows_a = mat1->rows;
     int rows_b = mat2->rows;
-
     if (cols_a != mat2->rows || result->rows != rows_a || cols_re != cols_b) {
         return -3;
     }
@@ -250,29 +248,25 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_re = result->data;
 
     //fill_matrix(result, 0);
-    matrix *trans;
+    matrix *trans;                            //transpose cite: https://stackoverflow.com/questions/16737298/what-is-the-fastest-way-to-transpose-a-matrix-in-c
     allocate_matrix(&trans, cols_b, cols_a);  //error check?
     double* data_tran = trans->data;
-
-    //transpose mat2 cite: https://stackoverflow.com/questions/16737298/what-is-the-fastest-way-to-transpose-a-matrix-in-c
     #pragma omp parallel for      
     for (int n = 0; n < cols_b * rows_b; n++) {
-        int p = n/cols_a;
-        int q = n%cols_a;
-        data_tran[n] = data_b[cols_b*q + p];
+        data_tran[n] = data_b[cols_b*(n%cols_a) + n/cols_a];
     }
 
-    #pragma omp parallel for
+    #pragma omp parallel for if (rows_a >= 256 && cols_a >= 4)
     for (int i = 0; i < rows_a; i++) {
-        #pragma omp parallel for 
+        #pragma omp parallel for if (cols_b >= 256 && cols_a >= 4)
         for(int j = 0; j < cols_b; j++) {
             int k;
+            double dot_sum = 0.0;
             __m256d tmp_a;
             __m256d tmp_b;
             __m256d tmp_sum = _mm256_set1_pd(0);
-            double dot_sum = 0.0;
             for (k = 0; k < cols_a/4*4; k += 4) {
-                tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
+                tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to 4, 4, 4 ... each
                 tmp_b = _mm256_loadu_pd(data_tran + j*cols_a + k); 
                 tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);
             }
@@ -280,7 +274,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             for (k = cols_a/4*4; k < cols_a; k ++) {
                 dot_sum += data_a[i*cols_a + k] * data_tran[j*cols_a + k];
             }
-            data_re[i*cols_re + j] += dot_sum;
+            data_re[i*cols_re + j] = dot_sum;
         }
     }
     deallocate_matrix(trans);
@@ -294,7 +288,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
-    /* A. FOR LOOP VERSION
+    /**Citation: https://xlinux.nist.gov/dads/HTML/repeatedSquaring.html */
     int cols_re = result->cols;
     int cols_a = mat->cols;
 
@@ -303,62 +297,65 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     if (cols_re != cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
         return -3;
     }
-
+    int pow_bianry = pow_to_binary(pow);
+    matrix  *cache = NULL;
     matrix *tmp = NULL;
-    allocate_matrix(&tmp, rows_re, cols_re);
-    fill_matrix(tmp, 0);
+    matrix *cur = NULL;
+    int a = allocate_matrix(&tmp, rows_re, cols_re);
+    int b = allocate_matrix(&cache, rows_re, cols_re);
+    int c = allocate_matrix(&cur, rows_re, cols_re);
+    if (a || b || c) {
+        return -2;
+    }
+    fill_matrix(result, 0);
     for (int i = 0; i < rows_re; i++) {
-        tmp->data[i*cols_re + i] = 1;            // tmp =  identical matrix [[1,0],[0,1]];
-    }
-
-    for (int i = 0; i < pow; i++) {
-        mul_matrix(result, tmp, mat);
-        for (int j = 0; j < rows_re * cols_re; j++) {    //NEED IMPROVE SPEED LATER
-            tmp->data[j] = result->data[j];
-        }   
-    }
-    deallocate_matrix(tmp);
-    */
-
-    // B. RECURSION VERSION 
-    int cols_re = result->cols;
-    int cols_a = mat->cols;
-
-    int rows_re = result->rows;
-    int rows_a = mat->rows;
-
-    if (cols_re!= cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
-        return -3;
-    }
-    if (pow == 1) {         //if power = 1  =>  result.matrix = mat.matrix
-        for (int i = 0; i < cols_re * rows_re; i++) {
-            result->data[i] = mat->data[i];            //NEED SPEED UP
-        }
-        return 0;
-    } else if (pow == 0) {  //if power = 0 -> result.data = mat.data
-        for (int i = 0; i < rows_re; i++) {      //if power = 0  =>  identical matrix
-            result->data[i*cols_re + i] = 1;     //identical matrix [[1,0],[0,1]];
-        }
-        return 0;
-    } else {
-        matrix *tmp_a = NULL;
-        allocate_matrix(&tmp_a, rows_re, cols_re);
-        
-        matrix *tmp_b = NULL;
-        allocate_matrix(&tmp_b, rows_re, cols_re);
-        if ((pow & 1) == 0) {               //if pow is even  => result = (A^(n/2))^2
-            pow_matrix(tmp_a, mat, pow/2);     
-            mul_matrix(result, tmp_a, tmp_a);  
-        } else if ((pow & 1) != 0) {        //if pow is odd   => result = A *(A^(n/2))^2
-            pow_matrix(tmp_a, mat, pow/2);
-            mul_matrix(tmp_b, tmp_a, tmp_a);
-            mul_matrix(result, tmp_b, mat);    
-        }
-        deallocate_matrix(tmp_a);
-        deallocate_matrix(tmp_b);
+        result->data[i*cols_re + i] = 1;            // tmp =  identical matrix [[1,0],[0,1]];
     }
     
+    int position = 0;
+
+    while(pow_bianry) {
+        if (!position) {
+            mul_matrix(tmp, result, mat);
+        } else {
+            mul_matrix(tmp, cache, cache);
+        }
+
+        if (pow_bianry % 10 && !position) {
+            mul_matrix(cur, tmp, result);
+        } else if (pow_bianry % 10 && position) {
+            mul_matrix(cur, result, tmp);
+        }
+  
+        for (int j = 0; j < rows_re * cols_re; j++) {   
+            if (pow_bianry % 10) {
+                result->data[j] = cur->data[j];
+            }
+            cache->data[j] = tmp->data[j];
+            
+        }   
+        position++;
+        pow_bianry /= 10;
+    }
+
+    deallocate_matrix(cache);
+    deallocate_matrix(tmp);
+    deallocate_matrix(cur);
+
     return 0;
+}
+
+int pow_to_binary(int pow) {
+    int binary = 0;
+    int position = 1;
+    while (pow) {
+        if (pow % 2) {
+            binary += 1 * position;
+        } 
+        position *= 10;
+        pow /= 2;
+    }
+    return binary;
 }
 
 /*
