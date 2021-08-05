@@ -266,9 +266,8 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         data_tran[n] = data_b[cols_b*(n%cols_a) + n/cols_a];
     }
 
-    #pragma omp parallel for if (rows_a >= 256 && cols_a >= 4)
+    #pragma omp parallel for if (rows_a >= 50 || cols_a >= 50)
     for (int i = 0; i < rows_a; i++) {
-        #pragma omp parallel for if (cols_b >= 256 && cols_a >= 4)
         for(int j = 0; j < cols_b; j++) {
             int k;
             double dot_sum = 0.0;
@@ -336,13 +335,13 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         } else if (pow % 2 && position) {
             mul_matrix(cur, result, tmp);
         }
-  
+        
+        #pragma omp parallel for if (rows_a >= 50 || cols_a >= 50)
         for (int j = 0; j < rows_re * cols_re; j++) {   
             if (pow % 2) {
                 result->data[j] = cur->data[j];
             }
             cache->data[j] = tmp->data[j];
-
         }   
         position++;
         pow /= 2;
