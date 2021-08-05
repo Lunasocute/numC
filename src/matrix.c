@@ -261,7 +261,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     matrix *trans;                            //transpose cite: https://stackoverflow.com/questions/16737298/what-is-the-fastest-way-to-transpose-a-matrix-in-c
     allocate_matrix(&trans, cols_b, cols_a);  //error check?
     double* data_tran = trans->data;
-    #pragma omp parallel for      
+    #pragma omp parallel for if (rows_a >= 100 || cols_a >= 100)    
     for (int n = 0; n < cols_b * rows_b; n++) {
         data_tran[n] = data_b[cols_b*(n%cols_a) + n/cols_a];
     }
@@ -316,20 +316,18 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     if (a || b || c) {
         return -2;
     }
-    fill_matrix(result, 0);
+
     for (int i = 0; i < rows_re; i++) {
         result->data[i*cols_re + i] = 1;            // tmp =  identical matrix [[1,0],[0,1]];
     }
     
     int position = 0;
-
     while(pow) {
         if (!position) {
             mul_matrix(tmp, result, mat);
         } else {
             mul_matrix(tmp, cache, cache);
         }
-
         if (pow % 2 && !position) {
             mul_matrix(cur, tmp, result);
         } else if (pow % 2 && position) {
@@ -337,7 +335,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         }
         
         #pragma omp parallel for if (rows_a >= 50 || cols_a >= 50)
-        for (int j = 0; j < rows_re * cols_re; j++) {   
+        for (int j = 0; j < rows_re * cols_re ; j++) {   
             if (pow % 2) {
                 result->data[j] = cur->data[j];
             }
@@ -404,7 +402,6 @@ int abs_matrix(matrix *result, matrix *mat) {
 
     #pragma omp parallel for
     for (int i = 0; i < m_rows; i++) {
-        #pragma omp parallel for
         for (int j = 0; j < m_cols; j++) {
             re_d[i*m_cols + j] = fabs(get_d[i*m_cols + j]);
         }
