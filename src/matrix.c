@@ -169,17 +169,8 @@ void fill_matrix(matrix *mat, double val) {
     int m_cols = mat->cols;
 
     #pragma omp parallel for
-    for (int i = 0; i < m_rows; i ++) {    //seems like could replace with one forloop
-        int k;   
-        for (k = 0; k < m_cols/4*4; k += 4) {
-            get_d[i*m_cols + k] = val;
-            get_d[i*m_cols + k + 1] = val;
-            get_d[i*m_cols + k + 2] = val;
-            get_d[i*m_cols + k + 3] = val;
-        }
-        for (; k < m_cols; k++) {   //tail
-            get_d[i*m_cols + k] = val;
-        }
+    for (int i = 0; i < m_rows * m_cols; i ++) {    //seems like could replace with one forloop
+        get_d[i] = val;
     }
 }
 
@@ -258,7 +249,18 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     double* data_b = mat2->data;
     double* data_re = result->data;
 
-    fill_matrix(result, 0);
+    //fill_matrix(result, 0);
+    matrix *trans;
+    allocate_matrix(&trans, cols_b, cols_a);  //error check?
+    double* data_tran = trans->data;
+
+    //transpose mat2 cite: https://stackoverflow.com/questions/16737298/what-is-the-fastest-way-to-transpose-a-matrix-in-c
+    #pragma omp parallel for      
+    for (int n = 0; n < cols_b * rows_b; n++) {
+        int p = n/cols_a;
+        int q = n%cols_a;
+        data_tran[n] = data_b[cols_b*q + p];
+    }
 
     matrix *trans;
     allocate_matrix(&trans, cols_b, cols_a);  //error check?
@@ -274,26 +276,25 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     #pragma omp parallel for
     for (int i = 0; i < rows_a; i++) {
         #pragma omp parallel for 
-        for(int j = 0; j < cols_b; j ++) {
+        for(int j = 0; j < cols_b; j++) {
             int k;
-            double dot_sum;
             __m256d tmp_a;
             __m256d tmp_b;
             __m256d tmp_sum = _mm256_set1_pd(0);
+            double dot_sum = 0.0;
             for (k = 0; k < cols_a/4*4; k += 4) {
                 tmp_a = _mm256_loadu_pd(data_a + i*cols_a + k);   //split one row to each 4, 4, 4 ... items
                 tmp_b = _mm256_loadu_pd(data_tran + j*cols_a + k); 
                 tmp_sum = _mm256_fmadd_pd(tmp_a, tmp_b, tmp_sum);
             }
-            dot_sum = tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3];
-            for (; k < cols_a; k ++) {
+            dot_sum += tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3];
+            for (k = cols_a/4*4; k < cols_a; k ++) {
                 dot_sum += data_a[i*cols_a + k] * data_tran[j*cols_a + k];
-            } 
-            data_re[i*cols_re + j] += dot_sum;
             }
+            data_re[i*cols_re + j] += dot_sum;
+        }
     }
     deallocate_matrix(trans);
-    
     return 0;
 }
 
