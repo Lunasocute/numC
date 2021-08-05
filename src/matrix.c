@@ -265,7 +265,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         data_tran[n] = data_b[cols_b*(n%cols_a) + n/cols_a];
     }
 
-    #pragma omp parallel for if (rows_a >= 128 || cols_b >= 128)
+    #pragma omp parallel for if (rows_a >= 100 || cols_b >= 100)
     for (int i = 0; i < rows_a; i++) {
         int j;
         for (j = 0; j < cols_b/4*4; j += 4) {
