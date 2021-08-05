@@ -278,7 +278,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             }
             dot_sum += tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3];
             for (k = cols_a/4*4; k < cols_a; k ++) {
-                dot_sum += tmp_sum[0] + tmp_sum[1] + tmp_sum[2] + tmp_sum[3];
+                dot_sum += data_a[i*cols_a + k] * data_tran[j*cols_a + k];
             }
             data_re[i*cols_re + j] += dot_sum;
         }
