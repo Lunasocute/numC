@@ -313,7 +313,6 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     if (cols_re != cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
         return -3;
     }
-    int pow_bianry = pow_to_binary(pow);
     matrix  *cache = NULL;
     matrix *tmp = NULL;
     matrix *cur = NULL;
@@ -330,28 +329,28 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     
     int position = 0;
 
-    while(pow_bianry) {
+    while(pow) {
         if (!position) {
             mul_matrix(tmp, result, mat);
         } else {
             mul_matrix(tmp, cache, cache);
         }
 
-        if (pow_bianry % 10 && !position) {
+        if (pow % 2 && !position) {
             mul_matrix(cur, tmp, result);
-        } else if (pow_bianry % 10 && position) {
+        } else if (pow % 2 && position) {
             mul_matrix(cur, result, tmp);
         }
   
         for (int j = 0; j < rows_re * cols_re; j++) {   
-            if (pow_bianry % 10) {
+            if (pow % 2) {
                 result->data[j] = cur->data[j];
             }
             cache->data[j] = tmp->data[j];
-            
+
         }   
         position++;
-        pow_bianry /= 10;
+        pow /= 2;
     }
 
     deallocate_matrix(cache);
@@ -361,18 +360,6 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     return 0;
 }
 
-int pow_to_binary(int pow) {
-    int binary = 0;
-    int position = 1;
-    while (pow) {
-        if (pow % 2) {
-            binary += 1 * position;
-        } 
-        position *= 10;
-        pow /= 2;
-    }
-    return binary;
-}
 
 /*
  * (OPTIONAL)
