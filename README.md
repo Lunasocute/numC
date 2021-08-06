@@ -1,4 +1,4 @@
-# numc
+# numc -Harry
 
 ### Provide answers to the following questions for each set of partners.
 - How many hours did you spend on the following tasks?
@@ -18,3 +18,32 @@
 
 - In one short paragraph, describe your partner's contribution(s) to the project.
   - <b>My partner, Luna, was in charge of implementing task1 and task3. She implemented all functions with data-level parallelism. When we are stuck for MatrixMul, she would go to office hours and ask for help. She came up with an idea to use cache blocking for MatrixMul. This is why our Matrix multiplication is so fast.</b>
+
+
+
+
+# numc -Luna
+
+### Provide answers to the following questions for each set of partners.
+- How many hours did you spend on the following tasks?
+  - Task 1 (Matrix functions in C): 10
+  - Task 2 (Writing the Python-C interface): 4
+  - Task 3 (Speeding up matrix operations): 24
+- Was this project interesting? What was the most interesting aspect about it?
+  - <b>
+  - <b> Yes. The most facinating part of this project is the path that we improved our matrix.c file from the pritimitve version to the final speedup version. Especially the matrix_mul function which is I mainly in charge of. I naively applied all the parellel method in front of all the for loops and tried to applied the unrolling method to the inside for loop but there's no significant improvement. Then I come up with an algorithm which transpose the second matrix and then apply the intrinsics code. Cause in this case, we can benefits mostly from the cache memory. Then I noticed my speedup did poorly for small matrices case. Hence I added a threshold behind every parallel statement, which increased the speedup for these cases. After these revised, the matrix_mul's speed still can't exceed the basic requirement, then I tried to unroll the second matrix's column which make it do the calculation as group of 4. After doing all this, our speedup improved significantly.
+- What did you learn?
+  - <b> The first thing that I learnt is how to apply the SIMD idea by utilizing intel intrinsics in our matrix.c file. When I glanced the starter code, I noticed the intrinsics instruction at the beginning. Then I decided to utilize all these instruction in matrix.c cause matrix is involved with multi data calculation all the time. Though speedup may decrease using intrinsics if it's a small matrix, we still got the tail case to deal with the this case.
+  I also learnt how could we deal with the interuption part when applying the matrix calculation and parallel. I listed all the varaible clearly and applied different method in those case.
+  - <b> 
+- Is there anything you would change?
+  - <b> 
+  - <b> The thing I may change is the way that I implement the mul_matrix. I may utilize the block cache next time.
+
+### If you worked with a partner:
+- In one short paragraph, describe your contribution(s) to the project.
+  - <b> I spent most time on the task 1 and 3. I firstly get a rough idea and did the starting work. Then I glaced at task2 for a second and I was not sure how to implement it in a proper way, hence my partner Harry in charge of this part. After he did it, I discussed with him and understand how the python&c interface works. Then for the task3, which I spent the most time on, I spent all the time to improve the performance of Mul. And finnaly I got it.
+  - <b>
+- In one short paragraph, describe your partner's contribution(s) to the project.
+  - <b>
+  - <b> My partner Harry spent most time on the task 2 and 3. He did all the python&c interface part. Then he redid the mat_pow. My primitive implementing is using the recursion. And he come up with the repeated square method to make it run faster. In addition, he gave me many valuable adivise, like it's not necessary to apply parallel for every for loop.
