@@ -188,7 +188,19 @@ class TestIndexSet(TestCase):
         nc_mat[rand_row][rand_col] = 2
         
         self.assertTrue(cmp_dp_nc_matrix(dp_mat, nc_mat))
-        self.assertEquals(nc_mat[rand_row][rand_col], 2)
+        self.assertEqual(nc_mat[rand_row][rand_col], 2)
+
+    def test_set1(self):
+        # TODO: YOUR CODE HERE
+        dp_mat, nc_mat = rand_dp_nc_matrix(10000, 1000, seed=1)
+        rand_row = np.random.randint(dp_mat.shape[0])
+        rand_col = np.random.randint(dp_mat.shape[1])
+        rand = np.random.randint(1000)
+        dp_mat[rand_row][rand_col] = rand
+        nc_mat[rand_row][rand_col] = rand
+        
+        self.assertTrue(cmp_dp_nc_matrix(dp_mat, nc_mat))
+        self.assertEqual(nc_mat[rand_row][rand_col], rand)
 
 class TestSlice(TestCase):
     def test_slice(self):
@@ -196,3 +208,15 @@ class TestSlice(TestCase):
         dp_mat, nc_mat = rand_dp_nc_matrix(2, 2, seed=0)
         self.assertTrue(cmp_dp_nc_matrix(dp_mat[0], nc_mat[0]))
         self.assertTrue(cmp_dp_nc_matrix(dp_mat[1], nc_mat[1]))
+
+    def test_slice2(self):
+        # TODO: YOUR CODE HERE
+        dp_mat, nc_mat = rand_dp_nc_matrix(100, 999, seed=0)
+        self.assertTrue(cmp_dp_nc_matrix(dp_mat[99], nc_mat[99]))
+        self.assertTrue(cmp_dp_nc_matrix(dp_mat[50], nc_mat[50]))
+
+    def test_slice3(self):
+        # TODO: YOUR CODE HERE
+        dp_mat, nc_mat = rand_dp_nc_matrix(9990, 999, seed=0)
+        self.assertTrue(cmp_dp_nc_matrix(dp_mat[1000], nc_mat[1000]))
+        self.assertTrue(cmp_dp_nc_matrix(dp_mat[992], nc_mat[992]))
