@@ -335,6 +335,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     return 0;
 }
 
+
 /*
  * Store the result of raising mat to the (pow)th power to `result`.
  * Return 0 upon success and a nonzero value upon failure.
@@ -342,44 +343,57 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
-    // B. RECURSION VERSION
+    /**Citation: https://xlinux.nist.gov/dads/HTML/repeatedSquaring.html */
     int cols_re = result->cols;
     int cols_a = mat->cols;
 
     int rows_re = result->rows;
     int rows_a = mat->rows;
-
-    if (cols_re!= cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
+    if (cols_re != cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
         return -3;
     }
-    if (pow == 1) {         //if power = 1  =>  result.matrix = mat.matrix
-        for (int i = 0; i < cols_re * rows_re; i++) {
-            result->data[i] = mat->data[i];            //NEED SPEED UP
-        }
-        return 0;
-    } else if (pow == 0) {  //if power = 0 -> result.data = mat.data
-        for (int i = 0; i < rows_re; i++) {      //if power = 0  =>  identical matrix
-            result->data[i*cols_re + i] = 1;     //identical matrix [[1,0],[0,1]];
-        }
-        return 0;
-    } else {
-        matrix *tmp_a = NULL;
-        allocate_matrix(&tmp_a, rows_re, cols_re);
-        
-        matrix *tmp_b = NULL;
-        allocate_matrix(&tmp_b, rows_re, cols_re);
-        if ((pow & 1) == 0) {               //if pow is even  => result = (A^(n/2))^2
-            pow_matrix(tmp_a, mat, pow/2);     
-            mul_matrix(result, tmp_a, tmp_a);  
-        } else if ((pow & 1) != 0) {        //if pow is odd   => result = A *(A^(n/2))^2
-            pow_matrix(tmp_a, mat, pow/2);
-            mul_matrix(tmp_b, tmp_a, tmp_a);
-            mul_matrix(result, tmp_b, mat);    
-        }
-        deallocate_matrix(tmp_a);
-        deallocate_matrix(tmp_b);
+    matrix  *cache = NULL;
+    matrix *tmp = NULL;
+    matrix *cur = NULL;
+    int a = allocate_matrix(&tmp, rows_re, cols_re);
+    int b = allocate_matrix(&cache, rows_re, cols_re);
+    int c = allocate_matrix(&cur, rows_re, cols_re);
+    if (a || b || c) {
+        return -2;
     }
-    
+
+    for (int i = 0; i < rows_re; i++) {
+        result->data[i*cols_re + i] = 1;            // tmp =  identical matrix [[1,0],[0,1]];
+    }
+
+    int position = 0;
+    while(pow) {
+        if (!position) {
+            mul_matrix(tmp, result, mat);
+        } else {
+            mul_matrix(tmp, cache, cache);
+        }
+        if (pow % 2 && !position) {
+            mul_matrix(cur, tmp, result);
+        } else if (pow % 2 && position) {
+            mul_matrix(cur, result, tmp);
+        }
+        
+        #pragma omp parallel for if (rows_a >= 50 || cols_a >= 50)
+        for (int j = 0; j < rows_re * cols_re ; j++) {   
+            if (pow % 2) {
+                result->data[j] = cur->data[j];
+            }
+            cache->data[j] = tmp->data[j];
+        }   
+        position++;
+        pow /= 2;
+    }
+
+    deallocate_matrix(cache);
+    deallocate_matrix(tmp);
+    deallocate_matrix(cur);
+
     return 0;
 }
 
