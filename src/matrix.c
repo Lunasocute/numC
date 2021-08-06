@@ -352,7 +352,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     if (cols_re != cols_a || rows_re != rows_a || pow < 0 || cols_a != rows_a) {
         return -3;
     }
-    matrix  *cache = NULL;
+    matrix *cache = NULL;
     matrix *tmp = NULL;
     matrix *cur = NULL;
     int a = allocate_matrix(&tmp, rows_re, cols_re);
