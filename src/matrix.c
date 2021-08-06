@@ -383,7 +383,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
                 result->data[j] = cur->data[j];
             }
             cache->data[j] = tmp->data[j];
-        }   
+        }
         position++;
         pow /= 2;
     }
