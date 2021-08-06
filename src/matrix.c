@@ -128,8 +128,8 @@ void deallocate_matrix(matrix *mat) {
     //`mat` is only child of its parent  &  parent's parent == null      -> free `mat->parent->data`
     else if (mat->parent && mat->parent->ref_cnt == 1) {
         free(mat->parent->data);
-        free(mat);
         free(mat->parent);
+        free(mat);
     }
     else if (mat->parent && mat->parent->ref_cnt > 1) {
         mat->parent->ref_cnt--;
@@ -422,7 +422,7 @@ int neg_matrix(matrix *result, matrix *mat) {
             _mm256_storeu_pd(re_d + i*m_cols + k, neg_vec);
         }
         for (; k < m_cols; k++) {   //tail
-            re_d[i*m_cols + k] = get_d[i*m_rows + k]*(-1);
+            re_d[i*m_cols + k] = get_d[i*m_cols + k]*(-1);
         }
     }
     return 0;
